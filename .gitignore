@@ -4,6 +4,7 @@
 memcap/*
 pointer/*
 *.swp
+.vscode
 *~
 temp/*
 dist/*
