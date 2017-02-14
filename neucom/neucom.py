@@ -9,8 +9,9 @@ from neucom.utils import *
 from neucom.memory import Memory
 
 class NeuCom(nn.Module):
-    def __init__(self, controller_class, input_size, output_size,
-                 mem_slot = 256, mem_size = 64, read_heads = 4, batch_size = 1):
+    def __init__(self, nhid=64, nn_output_size = 64, nlayer=1, controller_class = None, 
+                 input_size = 10, output_size = 10, mem_slot = 256, 
+                 mem_size = 64, read_heads = 4, batch_size = 1):
         """
         constructs a complete DNC architecture as described in the DNC paper
         http://www.nature.com/nature/journal/vaop/ncurrent/full/nature20101.html
@@ -35,13 +36,25 @@ class NeuCom(nn.Module):
             the size of the data batch
         """
         self.__dict__.update(locals())
+        super(NeuCom, self).__init__()
+        self.init_component()
 
-        self.memory = Memory(self.mem_slot, self.mem_size, 
+    def init_component(self):
+
+        self.memory = Memory(self.mem_slot, self.mem_size,
                              self.read_heads, self.batch_size)
 
-        self.controller = controller_class(self.input_size, self.output_size, 
-                                            self.read_heads, self.mem_size, self.batch_size)
-    
+        self.controller = self.controller_class(
+                                nhid           = self.nhid,
+                                nlayer         = self.nlayer,
+                                input_size     = self.input_size, 
+                                output_size    = self.output_size,
+                                read_heads     = self.read_heads,
+                                nn_output_size = self.nn_output_size,
+                                mem_size       = self.mem_size, 
+                                batch_size     = self.batch_size
+                            )
+
     def _step_op(self, step_input, memory_state, controller_state=None):
         """
         performs a step operation on the input step data
@@ -118,20 +131,22 @@ class NeuCom(nn.Module):
             nn_state[1] if nn_state is not None else torch.zeros(1)
         ]
 
-    def forward(self, input, mask=None):
-        time_step = input.size()[0]
-        memory_state = self.memory.init_memory()
-        controller_state = self.controller.get_state() if \
+    def forward(self, input_data, mask=None):
+        time_step = input_data.size()[0]
+        batch_size = input_data.size()[1]
+        
+        memory_state = self.memory.init_memory(batch_size)
+        controller_state = self.controller.get_state(batch_size) if \
                            self.controller.recurrent \
                            else (torch.zeros(1), torch.zeros(1))
 
-        outputs_time = input.new(self.sequence_length)
-        free_gates_time = input.new(self.sequence_length)
-        allocation_gates_time = input.new( self.sequence_length)
-        write_gates_time = input.new(self.sequence_length)
-        read_weights_time = input.new( self.sequence_length)
-        write_weights_time = input.new( self.sequence_length)
-        usage_vectors_time = input.new(self.sequence_length)
+        outputs_time = input_data.data.new(time_step)
+        free_gates_time = input_data.data.new(time_step)
+        allocation_gates_time = input_data.data.new(time_step)
+        write_gates_time = input_data.data.new(time_step)
+        read_weights_time = input_data.data.new( time_step)
+        write_weights_time = input_data.data.new( time_step )
+        usage_vectors_time = input_data.data.new(time_step)
         
         last_read_vectors = memory_state.read_vec
         mem_mat = memory_state.mem_mat
@@ -144,8 +159,9 @@ class NeuCom(nn.Module):
         pre_output, interface, nn_state = None, None, None
         #TODO: perform matmul(input, W) before loop
         
-        for time in xrange(time_step):
-            step_input = input[time]
+        for time in range(time_step):
+            step_input = input_data[time]
+            
             output_list = self._step_op(step_input, 
                           memory_state, controller_state)
             

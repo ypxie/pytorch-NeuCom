@@ -32,22 +32,28 @@ class Memory(nn.Module):
 
         self.memory_tuple = namedtuple('mem_tuple', 'mem_mat, mem_usage, pre_vec, \
                                         link_mat, write_weight, read_weight, read_vec')
+        super(Memory, self).__init__()
 
-    def init_memory(self):
+    def init_memory(self,batch_size):
         """
         return a tuple of the intial values pertinetn to 
         the memorys
         Returns: namedtuple('mem_tuple', 'mem_mat, mem_usage, pre_vec, \
                             link_mat, write_weight, read_weight, read_vec')
         """
-        mem_list = [Variable(torch.zeros(self.batch_size, self.mem_slot, self.mem_size).fill_(1e-6)), #initial memory matrix
-            Variable(torch.zeros(self.batch_size, self.mem_slot)), #initial memory usage vector
-            Variable(torch.zeros(self.batch_size, self.mem_slot)), #initial precedence vector
-            Variable(torch.zeros(self.batch_size, self.mem_slot, self.mem_slot)), #initial link matrix
+        mem_list = [
+            Variable(torch.zeros(batch_size, self.mem_slot, self.mem_size).fill_(1e-6), requires_grad = True), #initial memory matrix
+            Variable(torch.zeros(batch_size, self.mem_slot), requires_grad = True), #initial memory usage vector
+            Variable(torch.zeros(batch_size, self.mem_slot), requires_grad = True), #initial precedence vector
+            Variable(torch.zeros(batch_size, self.mem_slot, self.mem_slot), requires_grad = True), #initial link matrix
             
-            Variable(torch.zeros(self.batch_size, self.mem_slot).fill_(1e-6)), #initial write weighting
-            Variable(torch.zeros(self.batch_size, self.mem_slot, self.read_heads).fill_(1e-6)), #initial read weighting
-            Variable(torch.zeros(self.batch_size, self.mem_size, self.read_heads).fill_(1e-6))] #initial read vector
+            Variable(torch.zeros(batch_size, self.mem_slot).fill_(1e-6), requires_grad = True), #initial write weighting
+            Variable(torch.zeros(batch_size, self.mem_slot, self.read_heads).fill_(1e-6), requires_grad = True), #initial read weighting
+            Variable(torch.zeros(batch_size, self.mem_size, self.read_heads).fill_(1e-6), requires_grad = True)
+            ] #initial read vector
+        return self.memory_tuple._make(mem_list)
+
+
         return self.memory_tuple._make(mem_list)
 
     def get_content_address(self, memory_matrix, keys, strengths):

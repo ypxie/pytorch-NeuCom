@@ -10,6 +10,8 @@ import math
 import time
 import argparse
 
+import torch
+from torch.autograd import Variable
 import torch.nn.functional  as F
 import torch.optim as optim
 
@@ -17,9 +19,16 @@ from neucom.neucom import NeuCom
 from recurrent_controller import RecurrentController
 
 parser = argparse.ArgumentParser(description='PyTorch Differentiable Neural Computer')
-parser.add_argument('--nhid', type=int, default=200,
-                    help='humber of hidden units per layer')
-parser.add_argument('--nlayers', type=int, default=2,
+parser.add_argument('--input_size', type=int, default= 10,
+                    help='dimension of input feature')
+
+parser.add_argument('--nhid', type=int, default=64,
+                    help='humber of hidden units of the inner nn')
+                    
+parser.add_argument('--nn_output', type=int, default=64,
+                    help='humber of output units of the inner nn')
+                    
+parser.add_argument('--nlayer', type=int, default=2,
                     help='number of layers')
 parser.add_argument('--lr', type=float, default= 1e-4,
                     help='initial learning rate')
@@ -35,8 +44,6 @@ parser.add_argument('--mem_slot', type=int, default=15,
                     help='number of memory slots')
 parser.add_argument('--read_heads', type=int, default=2,
                     help='number of read heads')
-parser.add_argument('--mem_size', type=int, default=10,
-                    help='memory dimension')
 
 parser.add_argument('--cuda', action='store_false',
                     help='use CUDA')
@@ -62,7 +69,13 @@ def generate_data(batch_size, length, size):
     input_data[:, length, -1] = 1  # the end symbol
     target_output[:, length + 1:, :size - 1] = sequence
 
-    return input_data, target_output
+    input_data = torch.from_numpy(input_data)
+    target_output = torch.from_numpy(target_output)
+    if args.cuda:
+        input_data = input_data.cuda()
+        target_output = target_output.cuda()
+
+    return Variable(input_data), Variable(target_output)
 
 
 def criterion(predictions, targets):
@@ -86,7 +99,7 @@ if __name__ == '__main__':
     batch_size = 2
     sequence_max_length = 20
 
-    input_size = output_size = args.input_sizes
+    input_size = output_size = args.input_size
     mem_slot = args.mem_slot
     mem_size = args.mem_size
     read_heads = args.read_heads
@@ -103,6 +116,9 @@ if __name__ == '__main__':
             iterations = int(opt[1])
 
     ncomputer = NeuCom(
+                args.nhid,
+                args.nn_output,
+                args.nlayer,
                 RecurrentController,
                 input_size,
                 output_size,
@@ -112,6 +128,7 @@ if __name__ == '__main__':
                 batch_size
                )
 
+
     if args.cuda:
         ncomputer = ncomputer.cuda()
     
@@ -119,11 +136,12 @@ if __name__ == '__main__':
     optimizer = optim.Adam(ncomputer.parameters(), lr=args.lr)
 
 
-    for epoch in xrange(iterations + 1):
+    for epoch in range(iterations + 1):
         llprint("\rIteration {ep}/{tot}".format(ep=epoch, tot=iterations))
         optimizer.zero_grad()
 
         random_length = np.random.randint(1, sequence_max_length + 1)
+
         input_data, target_output = generate_data(batch_size, random_length, input_size)
 
         output, _ = ncomputer.forward(input_data)

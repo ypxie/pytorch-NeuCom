@@ -3,11 +3,16 @@ from torch.autograd import Variable
 import  torch.nn.functional as F
 import torch.nn as nn
 import numpy as np
-from .neucom.utils import *
+import os
+import sys
+
+sys.path.insert(0, os.path.join('..','..'))
+
+from neucom.utils import *
 
 class BaseController(nn.Module):
-    def __init__(self, input_size, output_size, read_heads, nn_output_size,
-                 mem_size, batch_size=1, recurrent=True):
+    def __init__(self, input_size=1, output_size=1, read_heads=1, 
+                 nn_output_size=1, mem_size=1, batch_size=1, recurrent=True):
         """
         constructs a controller as described in the DNC paper:
         http://www.nature.com/nature/journal/vaop/ncurrent/full/nature20101.html
@@ -25,6 +30,7 @@ class BaseController(nn.Module):
         batch_size: int
             the size of the input data batch [optional, usually set by the DNC object]
         """
+        super(BaseController, self).__init__()
         #self.__dict__.update(locals())
         self.input_size = input_size
         self.output_size = output_size
@@ -37,16 +43,21 @@ class BaseController(nn.Module):
         #nn_input_size should be infered from input
         self.nn_input_size = self.mem_size * self.read_heads + self.input_size
         #ToDo: this need to be adjust
-        self.interface_vector_size = self.mem_size * self.read_heads + 3 * self.mem_size + 5 * self.read_heads + 3
+        self.interface_vector_size = self.mem_size * self.read_heads + \
+                                     3 * self.mem_size + 5 * self.read_heads + 3
+        
+        initrange = 0.1
+        self.interface_weights = nn.Parameter(
+                torch.randn(self.nn_output_size, self.interface_vector_size).uniform_(-initrange, initrange)
+            )
+        self.nn_output_weights = nn.Parameter(
+                torch.randn(self.nn_output_size, self.output_size).uniform_(-initrange, initrange)
+            )
+        self.mem_output_weights = nn.Parameter(
+                torch.randn(self.mem_size * self.read_heads, self.output_size).uniform_(-initrange, initrange)
+            )
 
-        self.init_weights()
-    
-    def init_weights():
-        '''
-        set the intial values of the controller
-        '''
-        raise NotImplemented('network init_weights is not implemented.')
-    
+
     def parse_interface_vector(self, interface_vector):
         """
         pasres the flat interface_vector into its various components with their
@@ -119,7 +130,7 @@ class BaseController(nn.Module):
         """
 
         flat_read_vectors = last_read_vectors.view(-1, self.mem_size * self.read_heads)
-        complete_input = torch.cat( [X, flat_read_vectors], 1)
+        complete_input = torch.cat( (X, flat_read_vectors), 1)
         nn_output, nn_state = None, None
 
         if self.recurrent:

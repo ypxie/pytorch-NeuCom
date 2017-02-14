@@ -6,17 +6,17 @@ from neucom.controller import BaseController
 from torch.autograd import Variable
 
 class RecurrentController(BaseController):
-    def network_vars(self, nhid=256, nlayers = 1):
-        self.__dict__.update(locals())
+    def __init__(self, nhid = 64, nlayer=1, **kwargs):
+        super(RecurrentController, self).__init__(**kwargs)
 
-        initrange = 0.1
         self.nhid = nhid
-
+        initrange = 0.1
         ninp = self.nn_input_size
-        for id in range(nlayers):
-            self.W_lstm =  nn.Parameter( (torch.randn(ninp, nhid * 4)).uniform_(-initrange, initrange) )
-            self.U_lstm =  nn.Parameter( (torch.eye(nhid, nhid * 4)))
-            self.b_lstm =  nn.Parameter( (torch.zeros(1, nhid *4)))
+        #for id in range(nlayer):
+        self.W_lstm =  nn.Parameter( (torch.randn(ninp, nhid * 4)).uniform_(-initrange, initrange) )
+        self.U_lstm =  nn.Parameter( (torch.eye(nhid, nhid * 4)))
+        self.b_lstm =  nn.Parameter( (torch.zeros(1, nhid *4)))
+
 
     def network_op(self, X, states, mask=None):
         """
@@ -53,9 +53,9 @@ class RecurrentController(BaseController):
 
         return h, (h, c)
 
-    def get_state(self):
-        h = Variable(self.W_lstm.new(self.batch_size, self.nhid), requires_grad = True)
-        c = Variable(self.W_lstm.new(self.batch_size, self.nhid), requires_grad = True)
+    def get_state(self, batch_size):
+        h = Variable(self.W_lstm.data.new(batch_size, self.nhid), requires_grad = True)
+        c = Variable(self.W_lstm.data.new(batch_size, self.nhid), requires_grad = True)
         return (h,c)
         
 
