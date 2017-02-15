@@ -37,7 +37,7 @@ class RecurrentController(BaseController):
         c_tm1 = states[1]
 
         Z = torch.mm(X, self.W_lstm) + torch.mm(h_tm1, self.U_lstm)
-        Z = self.b_lstm.view_as(Z) + Z
+        Z = self.b_lstm.expand_as(Z) + Z
 
         z0 = Z[:, :self.nhid]
         z1 = Z[:, self.nhid: 2 * self.nhid]

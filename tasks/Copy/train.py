@@ -27,7 +27,7 @@ parser.add_argument('--nhid', type=int, default=64,
                     
 parser.add_argument('--nn_output', type=int, default=64,
                     help='humber of output units of the inner nn')
-                    
+
 parser.add_argument('--nlayer', type=int, default=2,
                     help='number of layers')
 parser.add_argument('--lr', type=float, default= 1e-4,
@@ -125,7 +125,8 @@ if __name__ == '__main__':
                 mem_slot,
                 mem_size,
                 read_heads,
-                batch_size
+                batch_size,
+                use_cuda = args.cuda
                )
 
 

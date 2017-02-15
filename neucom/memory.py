@@ -8,7 +8,7 @@ from collections import namedtuple
 from neucom.utils import *
 
 class Memory(nn.Module):
-    def __init__(self,mem_slot=256, mem_size=64, read_heads=4, batch_size=1):
+    def __init__(self,mem_slot=256, mem_size=64, read_heads=4, batch_size=1, use_cuda= True):
         """
         constructs a memory matrix with read heads and a write head as described
         in the DNC paper
@@ -29,7 +29,8 @@ class Memory(nn.Module):
 
         self.__dict__.update(locals())
         self.I = Variable(torch.eye(mem_slot))
-
+        if self.use_cuda:
+            self.I = self.I.cuda()
         self.memory_tuple = namedtuple('mem_tuple', 'mem_mat, mem_usage, pre_vec, \
                                         link_mat, write_weight, read_weight, read_vec')
         super(Memory, self).__init__()
@@ -51,10 +52,12 @@ class Memory(nn.Module):
             Variable(torch.zeros(batch_size, self.mem_slot, self.read_heads).fill_(1e-6), requires_grad = True), #initial read weighting
             Variable(torch.zeros(batch_size, self.mem_size, self.read_heads).fill_(1e-6), requires_grad = True)
             ] #initial read vector
+        if self.use_cuda:
+            for ind in range(len(mem_list)):
+                mem_list[ind] = mem_list[ind].cuda()
+                
         return self.memory_tuple._make(mem_list)
 
-
-        return self.memory_tuple._make(mem_list)
 
     def get_content_address(self, memory_matrix, keys, strengths):
         """

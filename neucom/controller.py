@@ -86,18 +86,18 @@ class BaseController(nn.Module):
         write_shape = erase_shape = (-1, self.mem_size)
         free_shape = (-1, self.read_heads)
         modes_shape = (-1, 3, self.read_heads)
-
+        interface_vector = interface_vector.contiguous()
         # parsing the vector into its individual components
-        parsed['read_keys'] = interface_vector[:,0:r_keys_end].view(*r_keys_shape)
-        parsed['read_strengths'] = interface_vector[:, r_keys_end:r_strengths_end].view(*r_strengths_shape)
-        parsed['write_key'] = interface_vector[:, r_strengths_end:w_key_end].view(*w_key_shape)
-        parsed['write_strength'] = interface_vector[:, w_key_end].view(-1, 1)
-        parsed['erase_vector'] = interface_vector[:, w_key_end + 1:erase_end].view(*erase_shape)
-        parsed['write_vector'] = interface_vector[:, erase_end:write_end].view(*write_shape)
-        parsed['free_gates'] = interface_vector[:, write_end:free_end].view(*free_shape)
-        parsed['allocation_gate'] = expand_dims(interface_vector[:, free_end], 1)
-        parsed['write_gate'] = expand_dims(interface_vector[:, free_end + 1], 1)
-        parsed['read_modes'] = interface_vector[:, free_end + 2:].view(*modes_shape)
+        parsed['read_keys'] = interface_vector[:,0:r_keys_end].contiguous().view(*r_keys_shape)
+        parsed['read_strengths'] = interface_vector[:, r_keys_end:r_strengths_end].contiguous().view(*r_strengths_shape)
+        parsed['write_key'] = interface_vector[:, r_strengths_end:w_key_end].contiguous().view(*w_key_shape)
+        parsed['write_strength'] = interface_vector[:, w_key_end].contiguous().view(-1, 1)
+        parsed['erase_vector'] = interface_vector[:, w_key_end + 1:erase_end].contiguous().view(*erase_shape)
+        parsed['write_vector'] = interface_vector[:, erase_end:write_end].contiguous().view(*write_shape)
+        parsed['free_gates'] = interface_vector[:, write_end:free_end].contiguous().view(*free_shape)
+        parsed['allocation_gate'] = expand_dims(interface_vector[:, free_end].contiguous(), 1)
+        parsed['write_gate'] = expand_dims(interface_vector[:, free_end + 1].contiguous(), 1)
+        parsed['read_modes'] = interface_vector[:, free_end + 2:].contiguous().view(*modes_shape)
 
         # transforming the components to ensure they're in the right ranges
         parsed['read_strengths'] = 1 + F.softplus(parsed['read_strengths'])
@@ -106,7 +106,7 @@ class BaseController(nn.Module):
         parsed['free_gates'] =  F.sigmoid(parsed['free_gates'])
         parsed['allocation_gate'] =  F.sigmoid(parsed['allocation_gate'])
         parsed['write_gate'] =  F.sigmoid(parsed['write_gate'])
-        parsed['read_modes'] = F.softmax(parsed['read_modes'], 1)
+        parsed['read_modes'] = softmax(parsed['read_modes'], 1)
 
         return parsed
 

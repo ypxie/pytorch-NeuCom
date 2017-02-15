@@ -18,8 +18,8 @@ def cumprod(input, axis = 1, exclusive=True):
     
 def expand_dims(input, axis=0):
     input_shape = list(input.size())
-    new_shape = input_shape.insert(axis, 1)
-    return input.view(*new_shape)
+    input_shape.insert(axis, 1)
+    return input.view(*input_shape)
 
 def matmal(left, right):
     '''

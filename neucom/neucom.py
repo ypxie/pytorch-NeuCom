@@ -11,7 +11,7 @@ from neucom.memory import Memory
 class NeuCom(nn.Module):
     def __init__(self, nhid=64, nn_output_size = 64, nlayer=1, controller_class = None, 
                  input_size = 10, output_size = 10, mem_slot = 256, 
-                 mem_size = 64, read_heads = 4, batch_size = 1):
+                 mem_size = 64, read_heads = 4, batch_size = 1, use_cuda=True):
         """
         constructs a complete DNC architecture as described in the DNC paper
         http://www.nature.com/nature/journal/vaop/ncurrent/full/nature20101.html
@@ -42,7 +42,7 @@ class NeuCom(nn.Module):
     def init_component(self):
 
         self.memory = Memory(self.mem_slot, self.mem_size,
-                             self.read_heads, self.batch_size)
+                             self.read_heads, self.batch_size, use_cuda = self.use_cuda)
 
         self.controller = self.controller_class(
                                 nhid           = self.nhid,
