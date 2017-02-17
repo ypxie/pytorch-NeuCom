@@ -13,9 +13,41 @@ class MyModule(nn.Module):
             self.register_parameter(name, nn.Parameter(tensor))
         return self._parameter[name]
 
-def cumprod(input, axis = 1, exclusive=True):
-    raise NotImplementedError
-    
+def cumprod(inputs, dim = 1, exclusive=True):
+    if type(inputs) is not Variable:
+        temp = torch.cumprod(inputs, dim)
+        if not exclusive:
+            return temp
+        else:
+            temp =  temp / (input[0].expand_dims(0).expand_as(temp) + 1e-8)
+            temp[-1] = temp[-1]/(input[-1]+1e-8)
+            return temp
+    else:
+        shape_ = inputs.size()
+        ndim = len(shape_)
+        n_slot = shape_[dim]
+        output = Variable(inputs.data.new(*shape_).fill_(1.0))
+        slice_ = [slice(0,None,1) for _ in range(ndim)]
+        for ind in range(1, n_slot):
+            this_slice, last_slice = slice_.copy(), slice_.copy()
+            this_slice[dim] = ind
+            last_slice[dim] = ind-1
+            
+           
+            
+            this_slice = tuple(this_slice)
+            last_slice = tuple(last_slice)
+            print(output[this_slice])
+            #torch.addcmul(output[this_slice], 1, output[last_slice], inputs[this_slice])
+            output[this_slice]  = output[last_slice]*inputs[this_slice]
+        if exclusive:
+            return output
+        else:
+            first_slice = slice_.copy()
+            first_slice[dim] = 0
+            fist_input = input(tuple(first_slice))
+            return output*fist_input.expand_dims(dim).expand_as(output)
+            
 def expand_dims(input, axis=0):
     input_shape = list(input.size())
     input_shape.insert(axis, 1)
@@ -46,11 +78,11 @@ def cosine_distance(memory_matrix, keys):
     Returns: Tensor (batch_size, mem_slot, number_of_keys)
         The list of lookup weightings for each provided key
     """
-    memory_norm = expand_dims(torch.norm(memory_matrix, 2, 2),axis = 2)
-    keys_norm = expand_dims(torch.norm(keys, 2, 1), axis = 1)
+    memory_norm = torch.norm(memory_matrix, 2, 2)
+    keys_norm   = torch.norm(keys, 2, 1)
 
-    normalized_mem = torch.div(memory_matrix, memory_norm.view_as(memory_matrix) + 1e-9)
-    normalized_keys = torch.div(keys,keys_norm.view_as(keys) + 1e-9)
+    normalized_mem = torch.div(memory_matrix, memory_norm.expand_as(memory_matrix) + 1e-9)
+    normalized_keys = torch.div(keys,keys_norm.expand_as(keys) + 1e-9)
 
     return torch.bmm(normalized_mem, normalized_keys)
 

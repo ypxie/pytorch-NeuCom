@@ -27,7 +27,7 @@ class Memory(nn.Module):
         self.I = Variable(torch.eye(mem_slot))
         if self.use_cuda:
             self.I = self.I.cuda()
-        self.memory_tuple = namedtuple('mem_tuple', 'mem_mat, mem_usage, pre_vec, \
+        self.memory_tuple = namedtuple('memory_tuple', 'mem_mat, mem_usage, pre_vec, \
                                         link_mat, write_weight, read_weight, read_vec')
         super(Memory, self).__init__()
 
@@ -35,7 +35,7 @@ class Memory(nn.Module):
         """
         return a tuple of the intial values pertinetn to 
         the memorys
-        Returns: namedtuple('mem_tuple', 'mem_mat, mem_usage, pre_vec, \
+        Returns: namedtuple('memory_tuple', 'mem_mat, mem_usage, pre_vec, \
                             link_mat, write_weight, read_weight, read_vec')
         """
         mem_list = [
@@ -51,7 +51,7 @@ class Memory(nn.Module):
         if self.use_cuda:
             for ind in range(len(mem_list)):
                 mem_list[ind] = mem_list[ind].cuda()
-                
+
         return self.memory_tuple._make(mem_list)
 
 
@@ -74,9 +74,9 @@ class Memory(nn.Module):
         # cos_dist is (batch_size, mem_slot, number_of_keys)
         cos_dist = cosine_distance(memory_matrix, keys)
         
-        strengths = expand_dims(strengths, 1).expand_as(cos_dist)
+        strengths = expand_dims(strengths, 1)
 
-        return softmax(cos_dist*strengths, 1)
+        return softmax(cos_dist*strengths.expand_as(cos_dist), 1)
 
     def update_usage_vector(self, usage_vector, read_weights, write_weight, free_gates):
         """
@@ -114,10 +114,9 @@ class Memory(nn.Module):
             the allocation weight for each word in memory
         """
 
-        #shifted_cumprod =  cumprod(sorted_usage, dim = 1) / (sorted_usage[0] + 1e-8)
-        #shifted_cumprod[-1] = shifted_cumprod[-1]/(sorted_usage[-1]+1e-8)
-        shifted_cumprod =  cumprod(sorted_usage, dim = 1, exclusive = True)
-
+        shifted_cumprod =  torch.cumprod(sorted_usage, axis = 1) / sorted_usage[0]
+        shifted_cumprod[-1] = shifted_cumprod[-1]/sorted_usage[-1]
+        
         unordered_allocation_weight = (1 - sorted_usage) * shifted_cumprod
 
         mapped_free_list = free_list + self.index_mapper
@@ -265,7 +264,7 @@ class Memory(nn.Module):
 
     def update_read_weights(self, lookup_weights, forward_weight, backward_weight, read_mode):
         """
-        updates and returns the current read_weights
+        Updates and returns the current read_weights
 
         Parameters:
         ----------
@@ -290,7 +289,7 @@ class Memory(nn.Module):
 
     def update_read_vectors(self, memory_matrix, read_weights):
         """
-        reads, updates, and returns the read vectors of the recently updated memory
+        Reads, updates, and returns the read vectors of the recently updated memory
 
         Parameters:
         ----------
@@ -311,10 +310,6 @@ class Memory(nn.Module):
               precedence_vector, link_matrix,  key, strength, free_gates,
               allocation_gate, write_gate, write_vector, erase_vector):
         """
-        defines the complete pipeline of writing to memory gievn the write variables
-        and the memory_matrix, usage_vector, link_matrix, and precedence_vector from
-        previous step
-
         Parameters:
         ----------
         memory_matrix: Tensor (batch_size, mem_slot, mem_size)
@@ -355,7 +350,6 @@ class Memory(nn.Module):
         lookup_weight = self.get_content_address(memory_matrix, key, strength)
         new_usage_vector = self.update_usage_vector(usage_vector, read_weights, write_weight, free_gates)
 
-        # sort the memory usage vector, superisingly the mode is sitll differentiable.
         np_new_usage_vec = new_usage_vector.cpu().data.numpy()
         sort_list = np.argsort(np_new_usage_vec, axis = -1)
 

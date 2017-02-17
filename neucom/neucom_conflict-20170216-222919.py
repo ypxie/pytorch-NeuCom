@@ -13,8 +13,6 @@ class NeuCom(nn.Module):
                  input_size = 10, output_size = 10, mem_slot = 256, 
                  mem_size = 64, read_heads = 4, batch_size = 1, use_cuda=True):
         """
-        The agent class.
-
         Parameters:
         -----------
         controller_class: BaseController
@@ -54,81 +52,6 @@ class NeuCom(nn.Module):
                                 batch_size     = self.batch_size
                             )
 
-    def _step_op(self, step_input, memory_state, controller_state=None):
-        """
-        performs a step operation on the input step data
-
-        Parameters:
-        ----------
-        step_input: Tensor (batch_size, input_size)
-        memory_state: Tuple
-            a tuple of current memory parameters
-        controller_state: Tuple
-            the state of the controller if it's recurrent
-
-        Returns: Tuple
-            output: Tensor (batch_size, output_size)
-            memory_view: dict
-        """
-
-        #namedtuple('mem_tuple', 'mem_mat, mem_usage, pre_vec, \
-        #                    link_mat, write_weight, read_weight, read_vec')
-        last_read_vectors = memory_state.read_vec
-        pre_output, interface, nn_state = None, None, None
-        
-        if self.controller.recurrent:
-            pre_output, interface, nn_state = self.controller.process_input(step_input, \
-                                                   last_read_vectors, controller_state)
-        else:
-            pre_output, interface = self.controller.process_input(step_input, last_read_vectors)
-
-        usage_vector, write_weight, memory_matrix, \
-        link_matrix, precedence_vector = self.memory.write \
-        (
-            memory_state.mem_mat, 
-            memory_state.mem_usage, 
-            memory_state.read_weight,
-            memory_state.write_weight, 
-            memory_state.pre_vec, 
-            memory_state.link_mat,
-            
-            interface['write_key'],
-            interface['write_strength'],
-            interface['free_gates'],
-            interface['allocation_gate'],
-            interface['write_gate'],
-            interface['write_vector'],
-            interface['erase_vector']
-        )
-
-        read_weights, read_vectors = self.memory.read(
-            memory_matrix,
-            memory_state.read_weight,
-            interface['read_keys'],
-            interface['read_strengths'],
-            link_matrix,
-            interface['read_modes'],
-        )
-
-        return [
-            # report new memory state to be updated outside the condition branch
-            memory_matrix,
-            usage_vector,
-            precedence_vector,
-            link_matrix,
-            write_weight,
-            read_weights,
-            read_vectors,
-
-            self.controller.final_output(pre_output, read_vectors),
-            interface['free_gates'],
-            interface['allocation_gate'],
-            interface['write_gate'],
-
-            # report new state of RNN if exists
-            nn_state[0] if nn_state is not None else torch.zeros(1),
-            nn_state[1] if nn_state is not None else torch.zeros(1)
-        ]
 
     def forward(self, input_data, mask=None):
         time_step = input_data.size()[0]
@@ -156,14 +79,11 @@ class NeuCom(nn.Module):
         link_mat = memory_state.link_mat
 
         pre_output, interface, nn_state = None, None, None
-        #TODO: perform matmul(input, W) before loops
+        #TODO: perform matmul(input, W) before loop
         
         for time in range(time_step):
             step_input = input_data[time]
-            
-            output_list = self._step_op(step_input, 
-                          memory_state, controller_state)
-            
+    
             if self.controller.recurrent:
                 pre_output, interface, nn_state = self.controller.process_input(step_input, \
                                                     last_read_vectors, controller_state)
@@ -239,7 +159,7 @@ class NeuCom(nn.Module):
     def restore(self, ckpts_dir, name):
         raise NotImplementedError
 
-    def __call__(self,*args, **kwargs):
-        return self.forward(*args, **kwargs)
+    def __call__(self,**kwargs):
+        return self.forward(**kwargs)
 
 

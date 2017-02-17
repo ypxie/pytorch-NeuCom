@@ -144,6 +144,8 @@ if __name__ == '__main__':
         random_length = np.random.randint(1, sequence_max_length + 1)
 
         input_data, target_output = generate_data(batch_size, random_length, input_size)
+        input_data = input_data.transpose(0,1).contiguous()
+        target_output = target_output.transpose(0,1).contiguous()
 
         output, _ = ncomputer.forward(input_data)
         loss = criterion(F.sigmoid(output), target_output)
