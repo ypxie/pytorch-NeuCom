@@ -373,8 +373,10 @@ class Memory(nn.Module):
         # sort the memory usage vector, superisingly the mode is sitll differentiable.
         np_new_usage_vec = new_usage_vector.cpu().data.numpy()
         sort_list = np.argsort(np_new_usage_vec, axis = -1)
-
-        free_list = Variable(new_usage_vector.data.new(*(sort_list.shape))).long()
+        
+        #free_list = Variable(new_usage_vector.data.new(*(sort_list.shape))).long()
+        free_list = Variable(torch.from_numpy(sort_list)).long()
+        free_list = to_device(free_list,new_usage_vector )
         sorted_usage = torch.gather(new_usage_vector,1,  free_list)
         
         #sorted_usage, free_list = top_k(-1 * new_usage_vector, self.mem_slot)
