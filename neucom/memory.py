@@ -25,8 +25,11 @@ class Memory(nn.Module):
 
         self.__dict__.update(locals())
         self.I = Variable(torch.eye(mem_slot))
+
         if self.use_cuda:
             self.I = self.I.cuda()
+            #self.index_mapper  = self.index_mapper.cuda()
+            
         self.memory_tuple = namedtuple('mem_tuple', 'mem_mat, mem_usage, pre_vec, \
                                         link_mat, write_weight, read_weight, read_vec')
         super(Memory, self).__init__()
@@ -116,22 +119,31 @@ class Memory(nn.Module):
 
         #shifted_cumprod =  cumprod(sorted_usage, dim = 1) / (sorted_usage[0] + 1e-8)
         #shifted_cumprod[-1] = shifted_cumprod[-1]/(sorted_usage[-1]+1e-8)
+        batch_size = free_list.size()[0]
         shifted_cumprod =  cumprod(sorted_usage, dim = 1, exclusive = True)
 
         unordered_allocation_weight = (1 - sorted_usage) * shifted_cumprod
 
-        mapped_free_list = free_list + self.index_mapper
+        index_mapper = Variable(
+            torch.from_numpy(np.cumsum([0] + [self.mem_slot] * (batch_size - 1))[:, np.newaxis]),  requires_grad = False
+        ).expand(batch_size, self.mem_slot)
+
+        index_mapper = index_mapper.cuda(free_list.get_device()) if free_list.is_cuda else index_mapper
+
+        mapped_free_list = free_list + index_mapper
         flat_unordered_allocation_weight = unordered_allocation_weight.view(-1)
         flat_mapped_free_list = mapped_free_list.view(-1)
-        flat_container = torch.zeros(self.batch_size * self.mem_slot)
+        flat_container = Variable(sorted_usage.data.new(self.batch_size * self.mem_slot).fill_(0), requires_grad= True).cpu()
+
         #flat_ordered_weights = flat_container.scatter(
         #    flat_mapped_free_list,
         #    flat_unordered_allocation_weight
         #)
-        flat_ordered_weights = flat_container.scatter_(
-            flat_mapped_free_list,
-            flat_unordered_allocation_weight
+        flat_ordered_weights = flat_container.scatter_(0,
+            flat_mapped_free_list.cpu(),
+            flat_unordered_allocation_weight.cpu()
         )
+        flat_ordered_weights = to_device(flat_ordered_weights, free_list)
         return flat_ordered_weights.view(self.batch_size, self.mem_slot)
 
     def update_write_weight(self, lookup_weight, allocation_weight, write_gate, allocation_gate):
@@ -140,7 +152,7 @@ class Memory(nn.Module):
 
         Parameters:
         ----------
-        lookup_weight: Tensor (batch_size, mem_slot, 1)
+        lookup_weight: Tensor (batch_size, mem_slot, number_of_keys)
             the weight of the lookup operation in writing
         allocation_weight: Tensor (batch_size, mem_slot)
             the weight of the allocation operation in writing
@@ -156,8 +168,11 @@ class Memory(nn.Module):
         # remove the dimension of 1 from the lookup_weight
         first_2_size = lookup_weight.size()[0:2]
         lookup_weight = lookup_weight.view(*first_2_size)
-        updated_write_weight = write_gate * (allocation_gate * allocation_weight + (1 - allocation_gate) * lookup_weight)
+        alloc_wshape = allocation_weight.size()
 
+        updated_write_weight = write_gate * (allocation_gate.expand(*alloc_wshape) * \
+                               allocation_weight + (1 - allocation_gate) * lookup_weight)
+                               
         return updated_write_weight
 
     def update_memory(self, memory_matrix, write_weight, write_vector, erase_vector):
