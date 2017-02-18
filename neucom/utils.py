@@ -49,6 +49,8 @@ def to_device(src, ref):
     return src.cuda(ref.get_device()) if ref.is_cuda else src
 
 def cumprod(inputs, dim = 1, exclusive=True):
+    # https://github.com/tensorflow/tensorflow/blob/master/tensorflow/g3doc/api_docs/python/functions_and_classes/shard0/tf.cumprod.md
+    
     if type(inputs) is not Variable:
         temp = torch.cumprod(inputs, dim)
         if not exclusive:
@@ -72,6 +74,12 @@ def cumprod(inputs, dim = 1, exclusive=True):
             #torch.addcmul(output[this_slice], 1, output[last_slice], inputs[this_slice])
             output[this_slice]  = output[last_slice]*inputs[this_slice]
         if exclusive:
+            end_slice = slice_.copy()
+            end_slice[dim] = n_slot - 1
+            end_input = input(tuple(end_slice))
+            end_output = output(tuple(end_slice))
+            end_input = torch.div(end_output, end_input)
+
             return output
         else:
             first_slice = slice_.copy()
