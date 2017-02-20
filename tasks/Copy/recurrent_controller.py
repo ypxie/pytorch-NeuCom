@@ -54,8 +54,8 @@ class RecurrentController(BaseController):
         return h, (h, c)
 
     def get_state(self, batch_size):
-        h = Variable(self.W_lstm.data.new(batch_size, self.nhid), requires_grad = True)
-        c = Variable(self.W_lstm.data.new(batch_size, self.nhid), requires_grad = True)
+        h = Variable(self.W_lstm.data.new(batch_size, self.nhid).fill_(0.0), requires_grad = True)
+        c = Variable(self.W_lstm.data.new(batch_size, self.nhid).fill_(0.0), requires_grad = True)
         return (h,c)
         
 

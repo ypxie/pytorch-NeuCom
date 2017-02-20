@@ -24,21 +24,21 @@ parser = argparse.ArgumentParser(description='PyTorch Differentiable Neural Comp
 parser.add_argument('--input_size', type=int, default= 10,
                     help='dimension of input feature')
 
-parser.add_argument('--nhid', type=int, default=64,
+parser.add_argument('--nhid', type=int, default= 16,
                     help='humber of hidden units of the inner nn')
                     
-parser.add_argument('--nn_output', type=int, default=64,
+parser.add_argument('--nn_output', type=int, default= 16,
                     help='humber of output units of the inner nn')
 
 parser.add_argument('--nlayer', type=int, default=2,
                     help='number of layers')
-parser.add_argument('--lr', type=float, default= 1e-4,
+parser.add_argument('--lr', type=float, default= 1e-2,
                     help='initial learning rate')
 parser.add_argument('--clip', type=float, default=0.5,
                     help='gradient clipping')
 parser.add_argument('--epochs', type=int, default=6,
                     help='upper epoch limit')
-parser.add_argument('--batch-size', type=int, default= 32, metavar='N',
+parser.add_argument('--batch-size', type=int, default= 4, metavar='N',
                     help='batch size')
 parser.add_argument('--mem_size', type=int, default=10,
                     help='memory dimension')
@@ -79,10 +79,11 @@ def generate_data(batch_size, length, size):
 
     return Variable(input_data), Variable(target_output)
 
-
 def criterion(predictions, targets):
-    return F.cross_entropy(predictions, targets)
-
+    return torch.mean(
+        -1 * torch.log(predictions + 1e-9) * (targets) - torch.log(1 - predictions + + 1e-9) * (1 - targets)
+    )
+    
 def clip_gradient(model, clip):
     """Computes a gradient clipping coefficient based on gradient norm."""
     totalnorm = 0
@@ -99,7 +100,7 @@ if __name__ == '__main__':
     tb_logs_dir = os.path.join(dirname, 'logs')
 
     batch_size = 2
-    sequence_max_length = 20
+    sequence_max_length = 15
 
     input_size = output_size = args.input_size
     mem_slot = args.mem_slot
@@ -108,7 +109,7 @@ if __name__ == '__main__':
     
     from_checkpoint = None
     iterations = 100000
-
+    save_freq = 5
     options,_ = getopt.getopt(sys.argv[1:], '', ['checkpoint=', 'iterations='])
 
     for opt in options:
@@ -135,9 +136,9 @@ if __name__ == '__main__':
     if args.cuda:
         ncomputer = ncomputer.cuda()
     
-    last_100_losses = []
-    optimizer = optim.Adam(ncomputer.parameters(), lr=args.lr)
-
+    last_save_losses = []
+    #optimizer = optim.Adam(ncomputer.parameters(), lr=args.lr)
+    optimizer = optim.SGD(ncomputer.parameters(), lr=args.lr, momentum = 0.9)
 
     for epoch in range(iterations + 1):
         llprint("\rIteration {ep}/{tot}".format(ep=epoch, tot=iterations))
@@ -154,15 +155,15 @@ if __name__ == '__main__':
         loss.backward()
         optimizer.step()
         loss_value = loss.data[0]
-
-        summerize = (epoch % 100 == 0)
+        
+        summerize = (epoch % save_freq == 0)
         take_checkpoint = (epoch != 0) and (epoch % iterations == 0)
 
-        last_100_losses.append(loss_value)
+        last_save_losses.append(loss_value)
 
         if summerize:
-            llprint("\n\tAvg. Logistic Loss: %.4f\n" % (np.mean(last_100_losses)))
-            last_100_losses = []
+            llprint("\n\tAvg. Logistic Loss: %.4f\n" % (np.mean(last_save_losses)))
+            last_save_losses = []
         
         if take_checkpoint:
             llprint("\nSaving Checkpoint ... "),

@@ -24,7 +24,7 @@ class Memory(nn.Module):
         """
 
         self.__dict__.update(locals())
-        self.I = Variable(torch.eye(mem_slot))
+        self.I = Variable(expand_dims( torch.eye(mem_slot), 0)) #1,n,n
 
         if self.use_cuda:
             self.I = self.I.cuda()
@@ -121,7 +121,7 @@ class Memory(nn.Module):
         #shifted_cumprod[-1] = shifted_cumprod[-1]/(sorted_usage[-1]+1e-8)
         batch_size = free_list.size()[0]
         shifted_cumprod =  cumprod(sorted_usage, dim = 1, exclusive = True)
-
+        #shifted_cumprod = sorted_usage
         unordered_allocation_weight = (1 - sorted_usage) * shifted_cumprod
 
         index_mapper = Variable(
@@ -169,9 +169,10 @@ class Memory(nn.Module):
         first_2_size = lookup_weight.size()[0:2]
         lookup_weight = lookup_weight.view(*first_2_size)
         alloc_wshape = allocation_weight.size()
-
-        updated_write_weight = write_gate * (allocation_gate.expand(*alloc_wshape) * \
-                               allocation_weight + (1 - allocation_gate) * lookup_weight)
+        
+        expand_ag = allocation_gate.expand(*alloc_wshape)
+        updated_write_weight = write_gate.expand(*alloc_wshape) * ( expand_ag * \
+                               allocation_weight + (1 - expand_ag) * lookup_weight)
                                
         return updated_write_weight
 
@@ -201,8 +202,8 @@ class Memory(nn.Module):
         write_vector = expand_dims(write_vector, 1)
         erase_vector = expand_dims(erase_vector, 1)
 
-        erasing = memory_matrix * (1 - torch.mm(write_weight, erase_vector))
-        writing = torch.mm(write_weight, write_vector)
+        erasing = memory_matrix * (1 - torch.bmm(write_weight, erase_vector))
+        writing = torch.bmm(write_weight, write_vector)
         updated_memory = erasing + writing
 
         return updated_memory
@@ -223,8 +224,8 @@ class Memory(nn.Module):
             the updated precedence vector
         """
 
-        reset_factor = 1 - reduce_sum(write_weight, 1, keep_dims=True)
-        updated_precedence_vector = reset_factor * precedence_vector + write_weight
+        reset_factor = 1 - reduce_sum(write_weight, 1)
+        updated_precedence_vector = reset_factor.expand_as(precedence_vector) * precedence_vector + write_weight
 
         return updated_precedence_vector
     
@@ -246,12 +247,15 @@ class Memory(nn.Module):
             the updated temporal link matrix
         """
 
-        write_weight = expand_dims(write_weight, 2)
+        
         precedence_vector = expand_dims(precedence_vector, 1)
 
         reset_factor = 1 - pairwise_add(write_weight, is_batch=True)
-        updated_link_matrix = reset_factor * link_matrix + torch.mm(write_weight, precedence_vector)
-        updated_link_matrix = (1 - self.I) * updated_link_matrix  # eliminates self-links
+        
+        write_weight = expand_dims(write_weight, -1)
+
+        updated_link_matrix = reset_factor * link_matrix + torch.bmm(write_weight, precedence_vector)
+        updated_link_matrix = (1 - self.I).expand_as(updated_link_matrix) * updated_link_matrix  # eliminates self-links
 
         return updated_link_matrix
     
@@ -272,8 +276,8 @@ class Memory(nn.Module):
             backward weight: Tensor (batch_size, mem_slot, read_heads)
         """
 
-        forward_weight = torch.mm(link_matrix, read_weights)
-        backward_weight = torch.mm(link_matrix.transpose(0,1), read_weights)
+        forward_weight = torch.bmm(link_matrix, read_weights)
+        backward_weight = torch.bmm(link_matrix.transpose(1,2), read_weights)
 
 
         return forward_weight, backward_weight
@@ -296,9 +300,9 @@ class Memory(nn.Module):
         Returns: Tensor (batch_size, mem_slot, read_heads)
         """
 
-        backward_mode = expand_dims(read_mode[:, 0, :], 1) * backward_weight
-        lookup_mode = expand_dims(read_mode[:, 1, :], 1) * lookup_weights
-        forward_mode = expand_dims(read_mode[:, 2, :], 1) * forward_weight
+        backward_mode = expand_dims(read_mode[:, 0, :].contiguous(), 1).expand_as(backward_weight) * backward_weight
+        lookup_mode   = expand_dims(read_mode[:, 1, :].contiguous(), 1).expand_as(lookup_weights)  * lookup_weights
+        forward_mode  = expand_dims(read_mode[:, 2, :].contiguous(), 1).expand_as(forward_weight)  * forward_weight
         updated_read_weights = backward_mode + lookup_mode + forward_mode
 
         return updated_read_weights
@@ -317,7 +321,7 @@ class Memory(nn.Module):
         Returns: Tensor (mem_size, read_heads)
         """
 
-        updated_read_vectors = torch.mm(memory_matrix.transpose(0,1), read_weights)
+        updated_read_vectors = torch.bmm(memory_matrix.transpose(1,2), read_weights)
 
         return updated_read_vectors
 

@@ -14,9 +14,6 @@ class BaseController(nn.Module):
     def __init__(self, input_size=1, output_size=1, read_heads=1, 
                  nn_output_size=1, mem_size=1, batch_size=1, recurrent=True):
         """
-        constructs a controller as described in the DNC paper:
-        http://www.nature.com/nature/journal/vaop/ncurrent/full/nature20101.html
-
         Parameters:
         ----------
         input_size: int
