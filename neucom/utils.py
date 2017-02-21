@@ -18,17 +18,15 @@ def reduce_sum(inputs, dim=None, keep_dim=False):
 def pairwise_add(u, v=None, is_batch=False):
     """
     performs a pairwise summation between vectors (possibly the same)
-
+    can also be performed on batch of vectors.
     Parameters:
     ----------
-    u: Tensor (m, ) | (m, 1)
-    v: Tensor (n, ) | (n, 1) [optional]
-    is_batch: bool
-        a flag for whether the vectors come in a batch
-        ie.: whether the vectors has a shape of (b,n) or (b,n,1)
+    u, v: Tensor (m,) or (b,m)
 
-    Returns: Tensor (m, n) or (b, m, n)
-    Raises: ValueError
+    Returns: 
+    ---------
+    Tensor (m, n) or (b, m, n)
+    
     """
     u_shape = u.size()
 

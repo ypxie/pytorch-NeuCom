@@ -109,7 +109,7 @@ if __name__ == '__main__':
     
     from_checkpoint = None
     iterations = 100000
-    save_freq = 50
+    save_freq = 5
     options,_ = getopt.getopt(sys.argv[1:], '', ['checkpoint=', 'iterations='])
 
     for opt in options:
@@ -137,8 +137,8 @@ if __name__ == '__main__':
         ncomputer = ncomputer.cuda()
     
     last_save_losses = []
-    optimizer = optim.Adam(ncomputer.parameters(), lr=args.lr)
-    #optimizer = optim.SGD(ncomputer.parameters(), lr=args.lr, momentum = 0.9)
+    #optimizer = optim.Adam(ncomputer.parameters(), lr=args.lr)
+    optimizer = optim.SGD(ncomputer.parameters(), lr=args.lr, momentum = 0.9)
 
     for epoch in range(iterations + 1):
         llprint("\rIteration {ep}/{tot}".format(ep=epoch, tot=iterations))
