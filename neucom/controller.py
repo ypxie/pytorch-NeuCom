@@ -6,8 +6,6 @@ import numpy as np
 import os
 import sys
 
-sys.path.insert(0, os.path.join('..','..'))
-
 from neucom.utils import *
 
 class BaseController(nn.Module):
