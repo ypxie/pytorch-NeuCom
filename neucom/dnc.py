@@ -36,9 +36,6 @@ class DNC(nn.Module):
         """
         self.__dict__.update(locals())
         super(DNC, self).__init__()
-        self.init_component()
-
-    def init_component(self):
 
         self.memory = Memory(self.mem_slot, self.mem_size,
                              self.read_heads, self.batch_size, use_cuda = self.use_cuda)

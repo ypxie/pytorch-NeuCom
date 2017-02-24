@@ -22,6 +22,7 @@ class Memory(nn.Module):
         batch_size: int
             the size of input data batch
         """
+        super(Memory, self).__init__()
 
         self.__dict__.update(locals())
         self.I = Variable(expand_dims( torch.eye(mem_slot), 0)) #1,n,n
@@ -32,7 +33,6 @@ class Memory(nn.Module):
             
         self.memory_tuple = namedtuple('mem_tuple', 'mem_mat, mem_usage, pre_vec, \
                                         link_mat, write_weight, read_weight, read_vec')
-        super(Memory, self).__init__()
 
     def init_memory(self,batch_size):
         """

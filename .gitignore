@@ -1,6 +1,7 @@
 *.DS_Store
 *.pyc
 *py~
+*temp-*
 unit-tests/*
 memcap/*
 pointer/*

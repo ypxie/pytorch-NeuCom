@@ -38,7 +38,7 @@ parser.add_argument('--clip', type=float, default=0.5,
                     help='gradient clipping')
 parser.add_argument('--epochs', type=int, default=6,
                     help='upper epoch limit')
-parser.add_argument('--batch-size', type=int, default= 4, metavar='N',
+parser.add_argument('--batch_size', type=int, default= 4, metavar='N',
                     help='batch size')
 parser.add_argument('--mem_size', type=int, default=10,
                     help='memory dimension')
@@ -99,7 +99,7 @@ if __name__ == '__main__':
     ckpts_dir = os.path.join(dirname , 'checkpoints')
     tb_logs_dir = os.path.join(dirname, 'logs')
 
-    batch_size = 2
+    batch_size = args.batch_size
     sequence_max_length = 15
 
     input_size = output_size = args.input_size
