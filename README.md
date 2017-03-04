@@ -11,8 +11,9 @@ Anaconda
 
 
 ## How To Run
-1. Go to folder task/Copy
-2. `python train.py`
+Go to folder tasks/Copy
+
+`python train.py`
 
 ## Dynamic Memory Mechanisms
 
