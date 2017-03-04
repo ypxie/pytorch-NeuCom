@@ -7,7 +7,7 @@ This is a Pytorch implementation of DeepMind's Differentiable Neural Computer (D
 ## Local Environment Specification
 pytorch
 
-Anaconda
+Anaconda 2.7
 
 
 ## How To Run
