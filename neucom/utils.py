@@ -31,9 +31,9 @@ def pairwise_add(u, v=None, is_batch=False):
     u_shape = u.size()
 
     if len(u_shape) > 2 and not is_batch:
-        raise ValueError("Expected at most 2D tensors, but got %dD" % len(u_shape))
-    if len(u_shape) > 2 and is_batch:
-        raise ValueError("Expected at most 2D tensor batches, but got %dD" % len(u_shape))
+        raise ValueError("Expected at most 2D tensor or 3D tensor with batch")
+    if len(v_shape) > 2 and not is_batch:
+        raise ValueError("Expected at most 2D tensor or 3D tensor with batch")
 
     if v is None:
         v = u
