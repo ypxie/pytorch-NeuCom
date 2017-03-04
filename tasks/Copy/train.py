@@ -47,7 +47,7 @@ parser.add_argument('--mem_slot', type=int, default=15,
 parser.add_argument('--read_heads', type=int, default=2,
                     help='number of read heads')
 
-parser.add_argument('--cuda', action='store_false',
+parser.add_argument('--cuda', action='store_true',
                     help='use CUDA')
 parser.add_argument('--log-interval', type=int, default=200, metavar='N',
                     help='report interval')
