@@ -87,7 +87,7 @@ def generate_data(batch_size, length, size, cuda=False):
 
 def criterion(predictions, targets):
     return torch.mean(
-        -1 * torch.log(predictions + 1e-9) * (targets) - torch.log(1 - predictions + + 1e-9) * (1 - targets)
+        -1 * torch.log(predictions + 1e-9) * (targets) - torch.log(1 - predictions + 1e-9) * (1 - targets)
     )
     
 def clip_gradient(model, clip):
