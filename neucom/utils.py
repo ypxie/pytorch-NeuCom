@@ -29,15 +29,14 @@ def pairwise_add(u, v=None, is_batch=False):
     
     """
     u_shape = u.size()
+    if v is None:
+        v = u
+    v_shape = v.size()
 
     if len(u_shape) > 2 and not is_batch:
         raise ValueError("Expected at most 2D tensor or 3D tensor with batch")
     if len(v_shape) > 2 and not is_batch:
         raise ValueError("Expected at most 2D tensor or 3D tensor with batch")
-
-    if v is None:
-        v = u
-    v_shape = v.size()
 
     m = u_shape[0] if not is_batch else u_shape[1]
     n = v_shape[0] if not is_batch else v_shape[1]
