@@ -20,13 +20,13 @@ from neucom.dnc import DNC
 from recurrent_controller import RecurrentController
 
 parser = argparse.ArgumentParser(description='PyTorch Differentiable Neural Computer')
-parser.add_argument('--input_size', type=int, default= 10,
+parser.add_argument('--input_size', type=int, default= 16,
                     help='dimension of input feature')
 
-parser.add_argument('--nhid', type=int, default= 128,
+parser.add_argument('--nhid', type=int, default= 256,
                     help='humber of hidden units of the inner nn')
                     
-parser.add_argument('--nn_output', type=int, default= 16,
+parser.add_argument('--nn_output', type=int, default= 128,
                     help='humber of output units of the inner nn')
 
 parser.add_argument('--nlayer', type=int, default=2,
@@ -54,9 +54,9 @@ parser.add_argument('--log-interval', type=int, default=200, metavar='N',
 
 parser.add_argument('--iterations', type=int, default= 100000, metavar='N',
                     help='total number of iteration')
-parser.add_argument('--summerize_freq', type=int, default= 10, metavar='N',
+parser.add_argument('--summerize_freq', type=int, default= 100, metavar='N',
                     help='summerise frequency')
-parser.add_argument('--check_freq', type=int, default= 100, metavar='N',
+parser.add_argument('--check_freq', type=int, default= 1000, metavar='N',
                     help='check point frequency')
 
 args = parser.parse_args()
@@ -93,8 +93,6 @@ def generate_data(batch_size, length, size, cuda=False):
     return Variable(input_data), Variable(target_output)
 
 def criterion(predictions, targets):
-    if torch.sum(predictions) == nan:
-        print('nan detected')
     return torch.mean(
         -1 * torch.log(predictions + 1e-9) * (targets) - torch.log(1 - predictions + 1e-9) * (1 - targets)
     )

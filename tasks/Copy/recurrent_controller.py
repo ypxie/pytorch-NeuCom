@@ -51,7 +51,7 @@ class RecurrentController(BaseController):
         o = F.sigmoid(z3)
         
         h = o* F.relu(c)
-        out = torch.mm(h, self.hid_out)
+        out = F.relu(torch.mm(h, self.hid_out))
         return out, (h, c)
 
     def get_state(self, batch_size):
