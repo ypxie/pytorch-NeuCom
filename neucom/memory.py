@@ -374,7 +374,7 @@ class Memory(nn.Module):
         lookup_weight = self.get_content_address(memory_matrix, key, strength)
         new_usage_vector = self.update_usage_vector(usage_vector, read_weights, write_weight, free_gates)
 
-        # sort the memory usage vector, superisingly the mode is sitll differentiable.
+        # sort the memory usage vector, it's leaft node, superisingly the mode is sitll differentiable.
         np_new_usage_vec = new_usage_vector.cpu().data.numpy()
         sort_list = np.argsort(np_new_usage_vec, axis = -1)
         

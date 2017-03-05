@@ -36,9 +36,8 @@ parser.add_argument('--lr', type=float, default= 1e-2,
                     help='initial learning rate')
 parser.add_argument('--clip', type=float, default=0.5,
                     help='gradient clipping')
-parser.add_argument('--epochs', type=int, default=6,
-                    help='upper epoch limit')
-parser.add_argument('--batch-size', type=int, default= 4, metavar='N',
+
+parser.add_argument('--batch_size', type=int, default= 4, metavar='N',
                     help='batch size')
 parser.add_argument('--mem_size', type=int, default=10,
                     help='memory dimension')
@@ -47,13 +46,23 @@ parser.add_argument('--mem_slot', type=int, default=15,
 parser.add_argument('--read_heads', type=int, default=2,
                     help='number of read heads')
 
+parser.add_argument('--sequence_max_length', type=int, default= 15, metavar='N',
+                    help='sequence_max_length')
+
 parser.add_argument('--cuda', action='store_false',
                     help='use CUDA')
 parser.add_argument('--log-interval', type=int, default=200, metavar='N',
                     help='report interval')
-parser.add_argument('--save', type=str,  default='model.pt',
-                    help='path to save the final model')
+
+parser.add_argument('--iterations', type=int, default= 10000, metavar='N',
+                    help='total number of iteration')
+parser.add_argument('--summerize_freq', type=int, default= 10, metavar='N',
+                    help='summerise frequency')
+parser.add_argument('--check_freq', type=int, default= 100, metavar='N',
+                    help='check point frequency')
+
 args = parser.parse_args()
+
 
 
 def llprint(message):
@@ -97,10 +106,14 @@ if __name__ == '__main__':
 
     dirname = os.path.dirname(__file__)
     ckpts_dir = os.path.join(dirname , 'checkpoints')
-    tb_logs_dir = os.path.join(dirname, 'logs')
+    if not os.path.isdir(ckpts_dir):
+        os.mkdir(ckpts_dir)
 
-    batch_size = 2
-    sequence_max_length = 15
+    batch_size = args.batch_size
+    sequence_max_length = args.sequence_max_length
+    iterations = args.iterations
+    summerize_freq  = args.summerize_freq
+    check_freq = args.check_freq
 
     input_size = output_size = args.input_size
     mem_slot = args.mem_slot
@@ -108,8 +121,7 @@ if __name__ == '__main__':
     read_heads = args.read_heads
     
     from_checkpoint = None
-    iterations = 100000
-    save_freq = 50
+    
     options,_ = getopt.getopt(sys.argv[1:], '', ['checkpoint=', 'iterations='])
 
     for opt in options:
@@ -136,6 +148,9 @@ if __name__ == '__main__':
     if args.cuda:
         ncomputer = ncomputer.cuda()
     
+    if from_checkpoint is not None:
+        ncomputer.load_state_dict(torch.load(from_checkpoint) )# 12)
+
     last_save_losses = []
     optimizer = optim.Adam(ncomputer.parameters(), lr=args.lr)
     #optimizer = optim.SGD(ncomputer.parameters(), lr=args.lr, momentum = 0.9)
@@ -156,8 +171,8 @@ if __name__ == '__main__':
         optimizer.step()
         loss_value = loss.data[0]
         
-        summerize = (epoch % save_freq == 0)
-        take_checkpoint = (epoch != 0) and (epoch % iterations == 0)
+        summerize = (epoch % summerize_freq == 0)
+        take_checkpoint = (epoch != 0) and (epoch % check_freq == 0)
 
         last_save_losses.append(loss_value)
 
@@ -167,7 +182,7 @@ if __name__ == '__main__':
         
         if take_checkpoint:
             llprint("\nSaving Checkpoint ... "),
-            check_ptr = os.path.join(ckpts_dir, 'step_{}'.format(epoch))
-            with open(check_ptr, 'wb') as f:
-                torch.save(model, f)
+            check_ptr = os.path.join(ckpts_dir, 'step_{}.pth'.format(epoch))
+            cur_weights = ncomputer.state_dict()
+            torch.save(cur_weights, check_ptr)
             llprint("Done!\n")
