@@ -48,8 +48,7 @@ parser.add_argument('--read_heads', type=int, default=2,
 
 parser.add_argument('--sequence_max_length', type=int, default= 15, metavar='N',
                     help='sequence_max_length')
-
-parser.add_argument('--cuda', action='store_false',
+parser.add_argument('--cuda', action='store_true', default=False,
                     help='use CUDA')
 parser.add_argument('--log-interval', type=int, default=200, metavar='N',
                     help='report interval')
@@ -63,13 +62,19 @@ parser.add_argument('--check_freq', type=int, default= 100, metavar='N',
 
 args = parser.parse_args()
 
+args.cuda = args.cuda and torch.cuda.is_available()
+if args.cuda:
+    print('Using CUDA.')
+else:
+    print('Using CPU')
+    
 
 
 def llprint(message):
     sys.stdout.write(message)
     sys.stdout.flush()
 
-def generate_data(batch_size, length, size):
+def generate_data(batch_size, length, size, cuda=False):
 
     input_data = np.zeros((batch_size, 2 * length + 1, size), dtype=np.float32)
     target_output = np.zeros((batch_size, 2 * length + 1, size), dtype=np.float32)
@@ -82,7 +87,7 @@ def generate_data(batch_size, length, size):
 
     input_data = torch.from_numpy(input_data)
     target_output = torch.from_numpy(target_output)
-    if args.cuda:
+    if cuda:
         input_data = input_data.cuda()
         target_output = target_output.cuda()
 
@@ -161,7 +166,7 @@ if __name__ == '__main__':
 
         random_length = np.random.randint(1, sequence_max_length + 1)
 
-        input_data, target_output = generate_data(batch_size, random_length, input_size)
+        input_data, target_output = generate_data(batch_size, random_length, input_size, args.cuda)
         input_data = input_data.transpose(0,1).contiguous()
         target_output = target_output.transpose(0,1).contiguous()
 

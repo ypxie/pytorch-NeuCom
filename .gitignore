@@ -2,6 +2,7 @@
 *.pyc
 *py~
 *.pth
+*temp-*
 unit-tests/*
 memcap/*
 pointer/*

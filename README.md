@@ -5,16 +5,22 @@ This is a Pytorch implementation of DeepMind's Differentiable Neural Computer (D
 
 
 ## Local Environment Specification
-Todo
+pytorch
 
-## Experiment results
-Todo
+Anaconda 2.7
+
+
+## How To Run
+Go to folder tasks/Copy
+
+`python train.py`
+
 ## Dynamic Memory Mechanisms
 
 ![DNC-Memory-Mechanisms](/figures/dnc_digram.png)
 
 ## Acknowlegement
-This is a pytorch version of Mostafa-Samir's [tensorflow implementation](https://github.com/Mostafa-Samir/DNC-tensorflow)
+Mostafa-Samir's [tensorflow implementation](https://github.com/Mostafa-Samir/DNC-tensorflow)
 
 
 ## Author
