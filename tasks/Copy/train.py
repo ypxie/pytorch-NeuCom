@@ -1,4 +1,3 @@
-
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -24,7 +23,7 @@ parser = argparse.ArgumentParser(description='PyTorch Differentiable Neural Comp
 parser.add_argument('--input_size', type=int, default= 10,
                     help='dimension of input feature')
 
-parser.add_argument('--nhid', type=int, default= 16,
+parser.add_argument('--nhid', type=int, default= 128,
                     help='humber of hidden units of the inner nn')
                     
 parser.add_argument('--nn_output', type=int, default= 16,
@@ -39,21 +38,21 @@ parser.add_argument('--clip', type=float, default=0.5,
 
 parser.add_argument('--batch_size', type=int, default= 4, metavar='N',
                     help='batch size')
-parser.add_argument('--mem_size', type=int, default=10,
+parser.add_argument('--mem_size', type=int, default= 128,
                     help='memory dimension')
-parser.add_argument('--mem_slot', type=int, default=15,
+parser.add_argument('--mem_slot', type=int, default= 15,
                     help='number of memory slots')
 parser.add_argument('--read_heads', type=int, default=2,
                     help='number of read heads')
 
 parser.add_argument('--sequence_max_length', type=int, default= 15, metavar='N',
                     help='sequence_max_length')
-parser.add_argument('--cuda', action='store_true', default=False,
+parser.add_argument('--cuda', action='store_true', default= True,
                     help='use CUDA')
 parser.add_argument('--log-interval', type=int, default=200, metavar='N',
                     help='report interval')
 
-parser.add_argument('--iterations', type=int, default= 10000, metavar='N',
+parser.add_argument('--iterations', type=int, default= 100000, metavar='N',
                     help='total number of iteration')
 parser.add_argument('--summerize_freq', type=int, default= 10, metavar='N',
                     help='summerise frequency')
@@ -94,6 +93,8 @@ def generate_data(batch_size, length, size, cuda=False):
     return Variable(input_data), Variable(target_output)
 
 def criterion(predictions, targets):
+    if torch.sum(predictions) == nan:
+        print('nan detected')
     return torch.mean(
         -1 * torch.log(predictions + 1e-9) * (targets) - torch.log(1 - predictions + 1e-9) * (1 - targets)
     )

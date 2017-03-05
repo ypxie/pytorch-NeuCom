@@ -16,7 +16,8 @@ class RecurrentController(BaseController):
         self.W_lstm =  nn.Parameter( (torch.randn(ninp, nhid * 4)).uniform_(-initrange, initrange) )
         self.U_lstm =  nn.Parameter( (torch.eye(nhid, nhid * 4)))
         self.b_lstm =  nn.Parameter( (torch.zeros(1, nhid *4)))
-
+        
+        self.hid_out = nn.Parameter( (torch.randn(nhid, self.nn_output_size)).uniform_(-initrange, initrange) )
 
     def network_op(self, X, states, mask=None):
         """
@@ -50,8 +51,8 @@ class RecurrentController(BaseController):
         o = F.sigmoid(z3)
         
         h = o* F.relu(c)
-
-        return h, (h, c)
+        out = torch.mm(h, self.hid_out)
+        return out, (h, c)
 
     def get_state(self, batch_size):
         h = Variable(self.W_lstm.data.new(batch_size, self.nhid).fill_(0.0), requires_grad = True)
