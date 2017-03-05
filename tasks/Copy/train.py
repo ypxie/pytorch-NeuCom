@@ -20,32 +20,32 @@ from neucom.dnc import DNC
 from recurrent_controller import RecurrentController
 
 parser = argparse.ArgumentParser(description='PyTorch Differentiable Neural Computer')
-parser.add_argument('--input_size', type=int, default= 16,
+parser.add_argument('--input_size', type=int, default= 6,
                     help='dimension of input feature')
 
-parser.add_argument('--nhid', type=int, default= 256,
+parser.add_argument('--nhid', type=int, default= 32,
                     help='humber of hidden units of the inner nn')
                     
-parser.add_argument('--nn_output', type=int, default= 128,
+parser.add_argument('--nn_output', type=int, default= 32,
                     help='humber of output units of the inner nn')
 
 parser.add_argument('--nlayer', type=int, default=2,
                     help='number of layers')
-parser.add_argument('--lr', type=float, default= 1e-2,
+parser.add_argument('--lr', type=float, default= 1e-3,
                     help='initial learning rate')
 parser.add_argument('--clip', type=float, default=0.5,
                     help='gradient clipping')
 
 parser.add_argument('--batch_size', type=int, default= 4, metavar='N',
                     help='batch size')
-parser.add_argument('--mem_size', type=int, default= 128,
+parser.add_argument('--mem_size', type=int, default= 32,
                     help='memory dimension')
 parser.add_argument('--mem_slot', type=int, default= 15,
                     help='number of memory slots')
-parser.add_argument('--read_heads', type=int, default=2,
+parser.add_argument('--read_heads', type=int, default=1,
                     help='number of read heads')
 
-parser.add_argument('--sequence_max_length', type=int, default= 15, metavar='N',
+parser.add_argument('--sequence_max_length', type=int, default= 10, metavar='N',
                     help='sequence_max_length')
 parser.add_argument('--cuda', action='store_true', default= True,
                     help='use CUDA')
@@ -94,7 +94,7 @@ def generate_data(batch_size, length, size, cuda=False):
 
 def criterion(predictions, targets):
     return torch.mean(
-        -1 * torch.log(predictions + 1e-9) * (targets) - torch.log(1 - predictions + 1e-9) * (1 - targets)
+        -1 * F.logsigmoid(predictions) * (targets) - torch.log(1 - F.sigmoid(predictions) + 1e-9) * (1 - targets)
     )
     
 def clip_gradient(model, clip):
@@ -104,7 +104,7 @@ def clip_gradient(model, clip):
         modulenorm = p.grad.data.norm()
         totalnorm += modulenorm ** 2
     totalnorm = math.sqrt(totalnorm)
-    return min(1, args.clip / (totalnorm + 1e-6))
+    return min(args.clip, args.clip / (totalnorm + 1e-6))
 
 if __name__ == '__main__':
 
@@ -156,6 +156,8 @@ if __name__ == '__main__':
         ncomputer.load_state_dict(torch.load(from_checkpoint) )# 12)
 
     last_save_losses = []
+
+    #optimizer = optim.RMSprop(ncomputer.parameters(), lr=args.lr)
     optimizer = optim.Adam(ncomputer.parameters(), lr=args.lr)
     #optimizer = optim.SGD(ncomputer.parameters(), lr=args.lr, momentum = 0.9)
 
@@ -170,7 +172,7 @@ if __name__ == '__main__':
         target_output = target_output.transpose(0,1).contiguous()
 
         output, _ = ncomputer.forward(input_data)
-        loss = criterion(F.sigmoid(output), target_output)
+        loss = criterion((output), target_output)
         loss.backward()
         optimizer.step()
         loss_value = loss.data[0]
