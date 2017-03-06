@@ -24,10 +24,10 @@ parser = argparse.ArgumentParser(description='PyTorch Differentiable Neural Comp
 parser.add_argument('--input_size', type=int, default= 6,
                     help='dimension of input feature')
 
-parser.add_argument('--nhid', type=int, default= 16,
+parser.add_argument('--nhid', type=int, default= 64,
                     help='humber of hidden units of the inner nn')
                     
-parser.add_argument('--nn_output', type=int, default= 16,
+parser.add_argument('--nn_output', type=int, default= 64,
                     help='humber of output units of the inner nn')
 
 parser.add_argument('--nlayer', type=int, default=2,
