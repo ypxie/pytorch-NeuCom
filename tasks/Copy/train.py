@@ -110,8 +110,10 @@ def clip_gradient(model, clip):
 def register_nan_checks(model):
     def check_grad(module, grad_input, grad_output):
         # print(module) you can add this to see that the hook is called
-        if any(np.all(np.isnan(gi.data.numpy())) for gi in grad_input if gi is not None):
+        print('hello' + type(module).__name__)
+        if  any(np.all(np.isnan(gi.data.numpy())) for gi in grad_input if gi is not None):
             print('NaN gradient in ' + type(module).__name__)
+        
     model.apply(lambda module: module.register_backward_hook(check_grad))
 
 if __name__ == '__main__':
@@ -156,11 +158,11 @@ if __name__ == '__main__':
                 use_cuda = args.cuda
                )
 
+    
+    register_nan_checks(ncomputer)   
 
     if args.cuda:
         ncomputer = ncomputer.cuda()
-    
-    #register_nan_checks(ncomputer)   
         
     if from_checkpoint is not None:
         ncomputer.load_state_dict(torch.load(from_checkpoint) )# 12)
