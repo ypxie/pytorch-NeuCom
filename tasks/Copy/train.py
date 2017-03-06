@@ -24,10 +24,10 @@ parser = argparse.ArgumentParser(description='PyTorch Differentiable Neural Comp
 parser.add_argument('--input_size', type=int, default= 6,
                     help='dimension of input feature')
 
-parser.add_argument('--nhid', type=int, default= 64,
+parser.add_argument('--nhid', type=int, default= 128,
                     help='humber of hidden units of the inner nn')
                     
-parser.add_argument('--nn_output', type=int, default= 64,
+parser.add_argument('--nn_output', type=int, default= 128,
                     help='humber of output units of the inner nn')
 
 parser.add_argument('--nlayer', type=int, default=2,
@@ -46,7 +46,7 @@ parser.add_argument('--mem_slot', type=int, default= 15,
 parser.add_argument('--read_heads', type=int, default=1,
                     help='number of read heads')
 
-parser.add_argument('--sequence_max_length', type=int, default= 3, metavar='N',
+parser.add_argument('--sequence_max_length', type=int, default= 10, metavar='N',
                     help='sequence_max_length')
 parser.add_argument('--cuda', action='store_true', default= True,
                     help='use CUDA')
@@ -109,11 +109,11 @@ def clip_gradient(model, clip):
 
 def register_nan_checks(model):
     def check_grad(module, grad_input, grad_output):
-        if np.isnan(grad_input.data.cpu().numpy()):
+        # print(module) you can add this to see that the hook is called
+        if any(np.all(np.isnan(gi.data.numpy())) for gi in grad_input if gi is not None):
             print('NaN gradient in ' + type(module).__name__)
-            assert 0, 'got nan gradient.'
-    model.apply(lambda m: m.register_backward_hook(check_grad))
-    
+    model.apply(lambda module: module.register_backward_hook(check_grad))
+
 if __name__ == '__main__':
 
     dirname = os.path.dirname(__file__)
@@ -160,7 +160,7 @@ if __name__ == '__main__':
     if args.cuda:
         ncomputer = ncomputer.cuda()
     
-    register_nan_checks(ncomputer)   
+    #register_nan_checks(ncomputer)   
         
     if from_checkpoint is not None:
         ncomputer.load_state_dict(torch.load(from_checkpoint) )# 12)
