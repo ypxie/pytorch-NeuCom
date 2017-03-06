@@ -50,7 +50,8 @@ class DNC(nn.Module):
                                 mem_size       = self.mem_size, 
                                 batch_size     = self.batch_size
                             )
-
+        #apply_dict(locals())
+        
     def forward(self, input_data, mask=None):
         time_step = input_data.size()[0]
         batch_size = input_data.size()[1]
@@ -90,7 +91,7 @@ class DNC(nn.Module):
                                                     last_read_vectors, controller_state)
             else:
                 pre_output, interface = self.controller.process_input(step_input, last_read_vectors)
-
+            
             usage_vector, write_weight, mem_mat, \
             link_mat, pre_vec = self.memory.write \
                                             (
@@ -119,7 +120,8 @@ class DNC(nn.Module):
                                                 link_mat,
                                                 interface['read_modes'],
                                             )
-
+            
+            
             outputs_time[time] =  self.controller.final_output(pre_output, last_read_vectors).clone()
             free_gates_time[time] = interface['free_gates'].clone()
             allocation_gates_time[time] = interface['allocation_gate'].clone()
@@ -133,7 +135,7 @@ class DNC(nn.Module):
                                 nn_state[1] if nn_state is not None else torch.zeros(1)
                                 )
 
-
+        
 
         self.packed_output = torch.stack(outputs_time)
         self.packed_memory_view = {
@@ -144,6 +146,9 @@ class DNC(nn.Module):
             'write_weights':    torch.stack(write_weights_time),
             'usage_vectors':    torch.stack(usage_vectors_time)
         }
+        
+        
+        #apply_dict(locals())
         return   self.packed_output,  self.packed_memory_view 
 
     def save(self, ckpts_dir, name):

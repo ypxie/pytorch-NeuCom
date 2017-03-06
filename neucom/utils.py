@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 from copy import copy
 import torch
@@ -5,6 +6,29 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import torch.nn as nn
 
+def apply_var(v, k):
+    if isinstance(v, Variable) and v.requires_grad:
+            v.register_hook(inves(k))
+            
+def apply_dict(dic):
+    for k, v in dic.iteritems():
+        apply_var(v, k)
+        if isinstance(v, nn.Module):
+           key_list = [a for a in dir(v) if not a.startswith('__')]
+           for key in key_list:
+               apply_var(getattr(v, key), key)
+           for pk, pv in v._parameters.iteritems():
+               apply_var(pv, pk)
+        
+def inves(name=''):
+    def f(tensor):
+        if np.isnan(torch.mean(tensor).data.cpu().numpy() ):
+            print('\ngradient of {} :'.format(name))
+            print(tensor)
+            assert 0, 'nan gradient'
+            return tensor
+    return f
+        
 def reduce_sum(inputs, dim=None, keep_dim=False):
     if dim is None:
         return torch.sum(inputs)
@@ -111,7 +135,7 @@ def matmal(left, right):
     '''
     pass
 
-def cosine_distance(memory_matrix, keys):
+def cosine_distance(memory_matrix, cos_keys):
     """
     compute the cosine similarity between keys to each of the 
     memory slot.
@@ -129,13 +153,18 @@ def cosine_distance(memory_matrix, keys):
         The list of lookup weightings for each provided key
     """
     memory_norm = torch.norm(memory_matrix, 2, 2)
-    keys_norm = torch.norm(keys, 2, 1)
-
-    normalized_mem = torch.div(memory_matrix, memory_norm.expand_as(memory_matrix) + 1e-9)
-    normalized_keys = torch.div(keys,keys_norm.expand_as(keys) + 1e-9)
-
-    return torch.bmm(normalized_mem, normalized_keys)
-
+    keys_norm = torch.norm(cos_keys, 2, 1)
+    
+    normalized_mem = torch.div(memory_matrix, memory_norm.expand_as(memory_matrix) + 1e-8)
+    normalized_keys = torch.div(cos_keys, keys_norm.expand_as(cos_keys) + 1e-8)
+    
+    out =  torch.bmm(normalized_mem, normalized_keys)
+    
+    #print(normalized_keys)
+    #print(out)
+    #apply_dict(locals())
+    
+    return out
 def softmax(input, axis=1):
     """ 
     Apply softmax on input at certain axis.
@@ -154,8 +183,9 @@ def softmax(input, axis=1):
     trans_size = trans_input.size()
 
     input_2d = trans_input.contiguous().view(-1, trans_size[-1])
+    
     soft_max_2d = F.softmax(input_2d)
     
     soft_max_nd = soft_max_2d.view(*trans_size)
-    
+    #apply_dict(locals())
     return soft_max_nd.transpose(axis, len(input_size)-1)

@@ -16,6 +16,7 @@ from torch.autograd import Variable
 import torch.nn.functional  as F
 import torch.optim as optim
 
+from neucom.utils import inves, apply_dict
 from neucom.dnc import DNC
 from recurrent_controller import RecurrentController
 
@@ -23,29 +24,29 @@ parser = argparse.ArgumentParser(description='PyTorch Differentiable Neural Comp
 parser.add_argument('--input_size', type=int, default= 6,
                     help='dimension of input feature')
 
-parser.add_argument('--nhid', type=int, default= 32,
+parser.add_argument('--nhid', type=int, default= 16,
                     help='humber of hidden units of the inner nn')
                     
-parser.add_argument('--nn_output', type=int, default= 32,
+parser.add_argument('--nn_output', type=int, default= 16,
                     help='humber of output units of the inner nn')
 
 parser.add_argument('--nlayer', type=int, default=2,
                     help='number of layers')
-parser.add_argument('--lr', type=float, default= 1e-3,
+parser.add_argument('--lr', type=float, default= 1e-2,
                     help='initial learning rate')
 parser.add_argument('--clip', type=float, default=0.5,
                     help='gradient clipping')
 
-parser.add_argument('--batch_size', type=int, default= 4, metavar='N',
+parser.add_argument('--batch_size', type=int, default= 2, metavar='N',
                     help='batch size')
-parser.add_argument('--mem_size', type=int, default= 32,
+parser.add_argument('--mem_size', type=int, default= 16,
                     help='memory dimension')
 parser.add_argument('--mem_slot', type=int, default= 15,
                     help='number of memory slots')
 parser.add_argument('--read_heads', type=int, default=1,
                     help='number of read heads')
 
-parser.add_argument('--sequence_max_length', type=int, default= 10, metavar='N',
+parser.add_argument('--sequence_max_length', type=int, default= 3, metavar='N',
                     help='sequence_max_length')
 parser.add_argument('--cuda', action='store_true', default= True,
                     help='use CUDA')
@@ -56,7 +57,7 @@ parser.add_argument('--iterations', type=int, default= 100000, metavar='N',
                     help='total number of iteration')
 parser.add_argument('--summerize_freq', type=int, default= 100, metavar='N',
                     help='summerise frequency')
-parser.add_argument('--check_freq', type=int, default= 1000, metavar='N',
+parser.add_argument('--check_freq', type=int, default= 100, metavar='N',
                     help='check point frequency')
 
 args = parser.parse_args()
@@ -65,7 +66,7 @@ args.cuda = args.cuda and torch.cuda.is_available()
 if args.cuda:
     print('Using CUDA.')
 else:
-    print('Using CPU')
+    print('Using CPU.')
     
 
 
@@ -106,6 +107,13 @@ def clip_gradient(model, clip):
     totalnorm = math.sqrt(totalnorm)
     return min(args.clip, args.clip / (totalnorm + 1e-6))
 
+def register_nan_checks(model):
+    def check_grad(module, grad_input, grad_output):
+        if np.isnan(grad_input.data.cpu().numpy()):
+            print('NaN gradient in ' + type(module).__name__)
+            assert 0, 'got nan gradient.'
+    model.apply(lambda m: m.register_backward_hook(check_grad))
+    
 if __name__ == '__main__':
 
     dirname = os.path.dirname(__file__)
@@ -152,6 +160,8 @@ if __name__ == '__main__':
     if args.cuda:
         ncomputer = ncomputer.cuda()
     
+    register_nan_checks(ncomputer)   
+        
     if from_checkpoint is not None:
         ncomputer.load_state_dict(torch.load(from_checkpoint) )# 12)
 
@@ -160,20 +170,26 @@ if __name__ == '__main__':
     #optimizer = optim.RMSprop(ncomputer.parameters(), lr=args.lr)
     optimizer = optim.Adam(ncomputer.parameters(), lr=args.lr)
     #optimizer = optim.SGD(ncomputer.parameters(), lr=args.lr, momentum = 0.9)
-
+    
     for epoch in range(iterations + 1):
         llprint("\rIteration {ep}/{tot}".format(ep=epoch, tot=iterations))
         optimizer.zero_grad()
 
         random_length = np.random.randint(1, sequence_max_length + 1)
-
+        
         input_data, target_output = generate_data(batch_size, random_length, input_size, args.cuda)
         input_data = input_data.transpose(0,1).contiguous()
         target_output = target_output.transpose(0,1).contiguous()
 
         output, _ = ncomputer.forward(input_data)
+
         loss = criterion((output), target_output)
+        #if np.isnan(loss.data.cpu().numpy()):
+        #    llprint('\nGot nan loss, contine to jump the backward \n')
+            
+        #apply_dict(locals())
         loss.backward()
+        
         optimizer.step()
         loss_value = loss.data[0]
         

@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from neucom.controller import BaseController
 from torch.autograd import Variable
+from neucom.utils import *
 
 class RecurrentController(BaseController):
     def __init__(self, nhid = 64, nlayer=1, **kwargs):
@@ -34,6 +35,7 @@ class RecurrentController(BaseController):
         output ---
         updated tuple -----
         """
+        #it seems that using relu will result to nan error in cosine_distance, all 0 key is fatal.
         h_tm1 = states[0]
         c_tm1 = states[1]
 
@@ -50,8 +52,8 @@ class RecurrentController(BaseController):
         c = f * c_tm1 + i * F.tanh(z2)
         o = F.sigmoid(z3)
         
-        h = o* F.relu(c)
-        out = F.relu(torch.mm(h, self.hid_out))
+        h = o* F.tanh(c)
+        out = F.tanh(torch.mm(h, self.hid_out))
         return out, (h, c)
 
     def get_state(self, batch_size):
