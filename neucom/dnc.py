@@ -82,10 +82,7 @@ class DNC(nn.Module):
         
         for time in range(time_step):
             step_input = input_data[time]
-            
-            #output_list = self._step_op(step_input, 
-            #              memory_state, controller_state)
-            
+                  
             if self.controller.recurrent:
                 pre_output, interface, nn_state = self.controller.process_input(step_input, \
                                                     last_read_vectors, controller_state)
@@ -146,8 +143,7 @@ class DNC(nn.Module):
             'write_weights':    torch.stack(write_weights_time),
             'usage_vectors':    torch.stack(usage_vectors_time)
         }
-        
-        
+
         #apply_dict(locals())
         return   packed_output,  packed_memory_view 
 
