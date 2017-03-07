@@ -157,7 +157,7 @@ class DNC(nn.Module):
     def restore(self, ckpts_dir, name):
         raise NotImplementedError
 
-    def __call__(self,*args, **kwargs):
-        return self.forward(*args, **kwargs)
+    #def __call__(self,*args, **kwargs):
+    #    return self.forward(*args, **kwargs)
 
 
