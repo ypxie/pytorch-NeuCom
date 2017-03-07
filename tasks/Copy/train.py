@@ -48,7 +48,7 @@ parser.add_argument('--read_heads', type=int, default=1,
 
 parser.add_argument('--sequence_max_length', type=int, default= 4, metavar='N',
                     help='sequence_max_length')
-parser.add_argument('--cuda', action='store_true', default= True,
+parser.add_argument('--cuda', action='store_true', default = False,
                     help='use CUDA')
 parser.add_argument('--log-interval', type=int, default=200, metavar='N',
                     help='report interval')

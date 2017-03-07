@@ -137,8 +137,8 @@ class DNC(nn.Module):
 
         
 
-        self.packed_output = torch.stack(outputs_time)
-        self.packed_memory_view = {
+        packed_output = torch.stack(outputs_time)
+        packed_memory_view = {
             'free_gates':       torch.stack(free_gates_time),
             'allocation_gates': torch.stack(allocation_gates_time),
             'write_gates':      torch.stack(write_gates_time),
@@ -149,7 +149,7 @@ class DNC(nn.Module):
         
         
         #apply_dict(locals())
-        return   self.packed_output,  self.packed_memory_view 
+        return   packed_output,  packed_memory_view 
 
     def save(self, ckpts_dir, name):
         raise NotImplementedError
