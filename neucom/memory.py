@@ -325,7 +325,7 @@ class Memory(nn.Module):
         read_weights: Tensor (batch_size, mem_slot, read_heads)
             the amount of info to read from each memory location by each read head
 
-        Returns: Tensor (mem_size, read_heads)
+        Returns:  Tensor (batch_size, mem_size, read_heads)
         """
 
         updated_read_vectors = torch.bmm(memory_matrix.transpose(1,2), read_weights)

@@ -16,7 +16,7 @@ class RecurrentController(BaseController):
         #for id in range(nlayer):
         self.W_lstm =  nn.Parameter( (torch.randn(ninp, nhid * 4)).uniform_(-initrange, initrange) )
         self.U_lstm =  nn.Parameter( (torch.randn(nhid, nhid * 4)).uniform_(-initrange, initrange))
-        self.b_lstm =  nn.Parameter( (torch.zeros(1, nhid *4)))
+        self.b_lstm =  nn.Parameter( (torch.zeros(1, nhid *4) ))
         
         self.hid_out = nn.Parameter( (torch.randn(nhid, self.nn_output_size)).uniform_(-initrange, initrange) )
 

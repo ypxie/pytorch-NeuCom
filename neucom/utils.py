@@ -88,8 +88,8 @@ def cumprod(inputs, dim = 1, exclusive=True):
         if not exclusive:
             return temp
         else:
-            temp =  temp / (input[0].expand_dims(0).expand_as(temp) + 1e-8)
-            temp[-1] = temp[-1]/(input[-1]+1e-8)
+            temp =  temp / (inputs[0].expand_as(temp) + 1e-8)
+            temp[-1] = temp[-1]/(inputs[-1]+1e-8)
             return temp
     else:
         shape_ = inputs.size()

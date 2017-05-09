@@ -16,6 +16,7 @@ from torch.autograd import Variable
 import torch.nn.functional  as F
 import torch.optim as optim
 
+from torch.nn.utils import clip_grad_norm 
 from neucom.utils import inves, apply_dict
 from neucom.dnc import DNC
 from recurrent_controller import RecurrentController
@@ -68,8 +69,6 @@ if args.cuda:
 else:
     print('Using CPU.')
     
-
-
 def llprint(message):
     sys.stdout.write(message)
     sys.stdout.flush()
@@ -98,14 +97,6 @@ def criterion(predictions, targets):
         -1 * F.logsigmoid(predictions) * (targets) - torch.log(1 - F.sigmoid(predictions) + 1e-9) * (1 - targets)
     )
     
-def clip_gradient(model, clip):
-    """Computes a gradient clipping coefficient based on gradient norm."""
-    totalnorm = 0
-    for p in model.parameters():
-        modulenorm = p.grad.data.norm()
-        totalnorm += modulenorm ** 2
-    totalnorm = math.sqrt(totalnorm)
-    return min(args.clip, args.clip / (totalnorm + 1e-6))
 
 def register_nan_checks(model):
     def check_grad(module, grad_input, grad_output):
