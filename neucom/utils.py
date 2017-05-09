@@ -95,7 +95,6 @@ def cumprod(inputs, dim = 1, exclusive=True):
         shape_ = inputs.size()
         ndim = len(shape_)
         n_slot = shape_[dim]
-        output = Variable(inputs.data.new(*shape_).fill_(1.0), requires_grad = True)
         slice_ = [slice(0,None,1) for _ in range(ndim)]
         results = [[]] * n_slot
             
