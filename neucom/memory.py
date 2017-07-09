@@ -127,23 +127,23 @@ class Memory(nn.Module):
         index_mapper = Variable(
             torch.from_numpy(np.cumsum([0] + [self.mem_slot] * (batch_size - 1))[:, np.newaxis]),  requires_grad = False
         ).expand(batch_size, self.mem_slot)
-
+        
         #index_mapper = index_mapper.cuda(free_list.get_device()) if free_list.is_cuda else index_mapper
         index_mapper = to_device(index_mapper, free_list)
         mapped_free_list = free_list + index_mapper
         flat_unordered_allocation_weight = unordered_allocation_weight.view(-1)
         flat_mapped_free_list = mapped_free_list.view(-1)
-        flat_container = Variable(sorted_usage.data.new(self.batch_size * self.mem_slot).fill_(0), requires_grad= True).cpu()
+        flat_container = Variable(sorted_usage.data.new(self.batch_size * self.mem_slot).fill_(0), requires_grad= False)
 
         #flat_ordered_weights = flat_container.scatter(
         #    flat_mapped_free_list,
         #    flat_unordered_allocation_weight
         #)
         flat_ordered_weights = flat_container.scatter_(0,
-            flat_mapped_free_list.cpu(),
-            flat_unordered_allocation_weight.cpu()
+            flat_mapped_free_list.data,
+            flat_unordered_allocation_weight.data
         )
-        flat_ordered_weights = to_device(flat_ordered_weights, free_list)
+        #flat_ordered_weights = to_device(flat_ordered_weights, free_list)
         #apply_dict(locals())
         return flat_ordered_weights.view(self.batch_size, self.mem_slot)
 
