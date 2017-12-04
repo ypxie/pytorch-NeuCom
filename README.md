@@ -23,10 +23,5 @@ Go to folder tasks/Copy
 Mostafa-Samir's [tensorflow implementation](https://github.com/Mostafa-Samir/DNC-tensorflow)
 
 
-## Author
-Yuanpu Xie
-
-[yuanpuxie@gmail.com](yuanpuxie@gmail.com)
-
 ## License
 MIT
